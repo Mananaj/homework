@@ -143,16 +143,24 @@ def main():
             today = datetime.datetime.now()
             output = f"จดการบ้าน 📕《{today.strftime('%d %b %Y')}》\n"
             output += "======================\n"
-            for homework in st.session_state.homework_list:
+            for i, homework in enumerate(st.session_state.homework_list):
                 output += f"#{homework['subject']}\n"
                 output += f"-{homework['text']}\n"
                 due_date = datetime.datetime.strptime(homework['due_date'], '%Y-%m-%d')
                 output += f"[{due_date.strftime('%d %b %Y')}]" + "{" + f"{homework['teacher']}" + "}\n"
             output += "******************************"
             st.text_area("รายละเอียดการบ้าน", value=output, height=300)
+
+            st.subheader("ลบการบ้าน")
+            homework_to_remove = st.selectbox("เลือกการบ้านที่ต้องการลบ", 
+                                              options=range(len(st.session_state.homework_list)),
+                                              format_func=lambda x: f"{st.session_state.homework_list[x]['subject']} - {st.session_state.homework_list[x]['text'][:30]}...")
+            if st.button("ลบการบ้าน"):
+                removed_homework = st.session_state.homework_list.pop(homework_to_remove)
+                save_homework(st.session_state.homework_list)
+                st.success(f"ลบการบ้าน '{removed_homework['subject']}' เรียบร้อยแล้ว!")
         else:
             st.info("ยังไม่มีการบ้าน")
 
 if __name__ == "__main__":
     main()
-
