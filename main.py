@@ -1,6 +1,7 @@
 import streamlit as st
 import datetime
 import json
+import os
 
 def teacher_match(option):
     teachers = {
@@ -15,8 +16,13 @@ def teacher_match(option):
 def load_homework():
     try:
         with open('homework.json', 'r') as f:
-            return json.load(f)
+            data = f.read()
+            if not data:
+                return []
+            return json.loads(data)
     except FileNotFoundError:
+        return []
+    except json.JSONDecodeError:
         return []
 
 def save_homework(homework_list):
@@ -26,14 +32,12 @@ def save_homework(homework_list):
 def main():
     st.set_page_config(page_title="ระบบจัดการการบ้าน", page_icon="📚", layout="wide")
     
-    # Add dark mode and light mode switch
     dark_mode = st.sidebar.checkbox("Dark Mode")
     
     if dark_mode:
         st.markdown(
             """
             <style>
-            /* Custom dark mode styles */
             body {
                 color: #E0E0E0;
                 background-color: #1E1E1E;
@@ -63,7 +67,6 @@ def main():
                 background-color: #2D2D2D;
                 color: #E0E0E0;
             }
-            /* Make date input box match other input boxes */
             .stDateInput > div > div {
                 background-color: #000000;
                 border: 1px solid #FFFFFF;
@@ -75,7 +78,6 @@ def main():
             .stSidebar {
                 background-color: #1E1E1E;
             }
-            /* Responsive styles for mobile devices */
             @media (max-width: 768px) {
                 .stApp {
                     padding: 1rem;
@@ -106,7 +108,6 @@ def main():
     if 'homework_list' not in st.session_state:
         st.session_state.homework_list = load_homework()
 
-    # Use st.container() for better mobile layout
     container = st.container()
 
     with container:
@@ -126,6 +127,7 @@ def main():
         if st.button("เพิ่มการบ้าน"):
             if teacher != "Invalid option" and text and due_date:
                 st.session_state.homework_list.append({
+                    "subject": subject_options[option],
                     "teacher": teacher,
                     "text": text,
                     "due_date": due_date.strftime('%Y-%m-%d'),
@@ -138,13 +140,19 @@ def main():
 
         st.subheader("รายการการบ้านทั้งหมด")
         if st.session_state.homework_list:
-            for idx, homework in enumerate(st.session_state.homework_list, 1):
-                with st.expander(f"การบ้านที่ {idx}: {homework['teacher']}"):
-                    st.write(f"วันที่ได้รับมอบหมาย: {homework['assigned_date']}")
-                    st.write(f"เนื้อหาการบ้าน: {homework['text']}")
-                    st.write(f"วันที่ส่งการบ้าน: {homework['due_date']}")
+            today = datetime.datetime.now()
+            output = f"จดการบ้าน 📕《{today.strftime('%d %b %Y')}》\n"
+            output += "======================\n"
+            for homework in st.session_state.homework_list:
+                output += f"#{homework['subject']}\n"
+                output += f"-{homework['text']}\n"
+                due_date = datetime.datetime.strptime(homework['due_date'], '%Y-%m-%d')
+                output += f"[{due_date.strftime('%d %b %Y')}]" + "{" + f"{homework['teacher']}" + "}\n"
+            output += "******************************"
+            st.text_area("รายละเอียดการบ้าน", value=output, height=300)
         else:
             st.info("ยังไม่มีการบ้าน")
 
 if __name__ == "__main__":
     main()
+
